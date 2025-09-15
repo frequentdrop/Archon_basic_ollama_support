@@ -1438,6 +1438,10 @@ class CodeExtractionService:
             
             return validated_results
         except asyncio.CancelledError:
+            #print("error in generate_code_summaries_batch(), returning default summaries")
+            search_logger.info(
+                f"error in generate_code_summaries_batch(), returning default summaries"
+            )
             # If cancelled, return default summaries for all blocks
             default_summaries = []
             for item in all_code_blocks:
