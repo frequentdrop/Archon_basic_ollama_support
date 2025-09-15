@@ -6,7 +6,7 @@ Consolidates both utility functions and class-based service.
 """
 
 from typing import Any
-
+import re
 from supabase import Client
 
 from ..config.logfire_config import get_logger, search_logger
@@ -42,12 +42,13 @@ async def extract_source_summary(
     # Limit content length to avoid token limits
     truncated_content = content[:25000] if len(content) > 25000 else content
 
+    #TODO if qwen add /nothink ad cut off think tags
     # Create the prompt for generating the summary
     prompt = f"""<source_content>
 {truncated_content}
 </source_content>
 
-The above content is from the documentation for '{source_id}'. Please provide a concise summary (3-5 sentences) that describes what this library/tool/framework is about. The summary should help understand what the library/tool/framework accomplishes and the purpose.
+The above content is from the documentation for '{source_id}'. Please provide a concise summary (3-5 sentences) that describes what this library/tool/framework is about. The summary should help understand what the library/tool/framework accomplishes and the purpose. /nothink
 """
 
     try:
@@ -71,6 +72,7 @@ The above content is from the documentation for '{source_id}'. Please provide a 
                 ],
             )
 
+
             # Extract the generated summary with proper error handling
             if not response or not response.choices or len(response.choices) == 0:
                 search_logger.error(f"Empty or invalid response from LLM for {source_id}")
@@ -81,8 +83,8 @@ The above content is from the documentation for '{source_id}'. Please provide a 
                 search_logger.error(f"LLM returned None content for {source_id}")
                 return default_summary
 
-            summary = message_content.strip()
-
+            #summary = message_content.strip()
+            summary = re.sub(r'<think>.*?</think>', '', message_content.strip(), flags=re.DOTALL)
             # Ensure the summary is not too long
             if len(summary) > max_length:
                 summary = summary[:max_length] + "..."
